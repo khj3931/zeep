@@ -14,7 +14,7 @@
 
         body {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f8f9fa; /* 연한 회색 배경으로 카드 부각 */
+            background-color: #f5f7fa; /* 연한 회색 배경으로 카드 부각 */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -22,143 +22,143 @@
             padding: 20px;
         }
 
-        /* 2. 카드들을 감싸는 컨테이너 (그리드 사용) */
-        .card-container {
+        /* 2. 카드 컨테이너 (그리드 레이아웃) */
+        .card-wrapper {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 데스크탑: 3열 가로 정렬 */
-            gap: 30px; /* 카드 사이 간격 */
+            grid-template-columns: repeat(3, 1fr); /* 가로 3열 정렬 */
+            gap: 30px; /* 카드 간 간격 */
             max-width: 1200px;
             width: 100%;
         }
 
-        /* 3. 개별 카드 스타일 */
-        .card {
+        /* 3. 카드 개별 스타일 */
+        .card-container {
             background-color: #ffffff;
             border-radius: 15px; /* 모서리 둥글게 */
-            overflow: hidden; /* 자식 요소(이미지)가 모서리를 벗어나지 않게 설정 */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); /* 부드러운 그림자 */
-            transition: transform 0.3s ease; /* 호버 시 움직임 효과 */
+            overflow: hidden; /* 이미지 둥근 모서리 적용을 위해 필요 */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08); /* 부드러운 그림자 */
             display: flex;
             flex-direction: column;
+            transition: transform 0.3s ease; /* 호버 시 움직임 효과 */
         }
 
-        .card:hover {
-            transform: translateY(-10px); /* 마우스 올리면 살짝 위로 이동 */
+        .card-container:hover {
+            transform: translateY(-10px); /* 호버 시 살짝 위로 이동 */
         }
 
         /* 4. 상단: 이미지 영역 */
         .card-image {
             width: 100%;
-            height: 200px; /* 고정 높이 */
-            overflow: hidden;
-        }
-
-        .card-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* 비율 유지하며 영역 채우기 */
+            height: 200px;
+            object-fit: cover; /* 비율 유지하며 꽉 채움 */
         }
 
         /* 5. 중단: 설명 텍스트 영역 */
-        .card-body {
-            padding: 20px;
-            text-align: center;
-            flex-grow: 1; /* 텍스트 양에 상관없이 버튼 위치를 맞추기 위해 사용 */
+        .card-content {
+            padding: 25px;
+            flex-grow: 1; /* 텍스트 양에 상관없이 영역 확보 */
         }
 
         .card-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 15px;
+            font-size: 1.25rem;
+            font-weight: 700;
             color: #333;
+            margin-bottom: 12px;
         }
 
         .card-description {
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: #666;
-            line-height: 1.6; /* 가독성 좋은 줄 간격 */
+            line-height: 1.6;
+            word-break: keep-all; /* 한글 가독성 향상 */
         }
 
         /* 6. 하단: 버튼 영역 */
         .card-footer {
             padding: 20px;
-            text-align: center;
-            border-top: 1px solid #eee;
+            text-align: center; /* 버튼 중앙 정렬 */
+            border-top: 1px solid #f0f0f0; /* 영역 구분선 */
         }
 
-        .btn {
+        .btn-access {
             display: inline-block;
-            text-decoration: none;
-            background-color: #007bff; /* 기본 버튼 색상 */
-            color: white;
             padding: 12px 30px;
+            background-color: #007bff; /* 메인 블루 색상 */
+            color: #ffffff;
+            text-decoration: none; /* 링크 밑줄 제거 */
             border-radius: 25px; /* 알약 모양 버튼 */
             font-weight: 600;
-            transition: background-color 0.3s ease;
+            font-size: 0.9rem;
+            transition: background-color 0.2s ease;
         }
 
-        .btn:hover {
-            background-color: #0056b3; /* 호버 시 더 진한 색상 */
+        .btn-access:hover {
+            background-color: #0056b3; /* 호버 시 어두운 블루 */
         }
 
-        /* 7. 반응형 디자인: 모바일 대응 */
+        /* 7. 반응형 디자인 (모바일 대응) */
         @media (max-width: 992px) {
-            .card-container {
-                grid-template-columns: repeat(2, 1fr); /* 태블릿: 2열 정렬 */
+            .card-wrapper {
+                grid-template-columns: repeat(2, 1fr); /* 태블릿: 2열 */
             }
         }
 
         @media (max-width: 600px) {
-            .card-container {
-                grid-template-columns: 1fr; /* 모바일: 1열(세로) 정렬 */
+            .card-wrapper {
+                grid-template-columns: 1fr; /* 모바일: 1열 (세로 정렬) */
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- 카드 전체 컨테이너 -->
-    <div class="card-container">
-        
+    <!-- 카드 전체를 감싸는 Wrapper -->
+    <div class="card-wrapper">
+
         <!-- 카드 1 -->
-        <article class="card">
-            <div class="card-image">
-                <img src="https://picsum.photos/id/180/400/300" alt="곱셈공식 활동">
+        <article class="card-container">
+            <!-- 1. 이미지 영역 -->
+            <img src="https://picsum.photos/id/180/400/250" alt="삼각함수 학습" class="card-image">
+            
+            <!-- 2. 설명 텍스트 영역 -->
+            <div class="card-content">
+                <h2 class="card-title">삼각함수 공식 마스터</h2>
+                <p class="card-description">
+                    카드 조립 방식으로 재미있게 배우는 삼각함수 공식 연습 웹앱입니다. 다양한 공식의 구조를 직접 완성해보세요.
+                </p>
             </div>
-            <div class="card-body">
-                <h2 class="card-title">곱셈공식 조립하기</h2>
-                <p class="card-description">조립형 카드를 이용해 곱셈공식의 전개 원리를 재미있게 익혀보는 인터랙티브 활동입니다.</p>
-            </div>
+
+            <!-- 3. 버튼 영역 -->
             <div class="card-footer">
-                <a href="activity.html" class="btn">접속하기</a>
+                <a href="activity.html" class="btn-access">접속하기</a>
             </div>
         </article>
 
         <!-- 카드 2 -->
-        <article class="card">
-            <div class="card-image">
-                <img src="https://picsum.photos/id/10/400/300" alt="이미지 2">
-            </div>
-            <div class="card-body">
-                <h2 class="card-title">웹 서비스 B</h2>
-                <p class="card-description">직관적인 인터페이스와 강력한 기능을 통해 업무 효율을 획기적으로 높여주는 솔루션입니다.</p>
+        <article class="card-container">
+            <img src="https://picsum.photos/id/160/400/250" alt="이미지 2" class="card-image">
+            <div class="card-content">
+                <h2 class="card-title">창의적인 디자인</h2>
+                <p class="card-description">
+                    감각적인 레이아웃과 아름다운 색감을 경험하세요. 사용자 중심의 디자인으로 웹서핑이 더욱 즐거워집니다.
+                </p>
             </div>
             <div class="card-footer">
-                <a href="#" class="btn">접속하기</a>
+                <a href="#" class="btn-access">접속하기</a>
             </div>
         </article>
 
         <!-- 카드 3 -->
-        <article class="card">
-            <div class="card-image">
-                <img src="https://picsum.photos/id/20/400/300" alt="이미지 3">
-            </div>
-            <div class="card-body">
-                <h2 class="card-title">웹 서비스 C</h2>
-                <p class="card-description">아름다운 그래픽과 매끄러운 애니메이션으로 보는 즐거움을 선사하는 포트폴리오 사이트입니다.</p>
+        <article class="card-container">
+            <img src="https://picsum.photos/id/201/400/250" alt="이미지 3" class="card-image">
+            <div class="card-content">
+                <h2 class="card-title">스마트 협업 도구</h2>
+                <p class="card-description">
+                    팀 프로젝트를 위한 완벽한 솔루션입니다. 실시간 동기화와 직관적인 인터페이스를 지금 바로 체험해보세요.
+                </p>
             </div>
             <div class="card-footer">
-                <a href="#" class="btn">접속하기</a>
+                <a href="#" class="btn-access">접속하기</a>
             </div>
         </article>
 
