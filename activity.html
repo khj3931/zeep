@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>곱셈공식 조립형 연습 웹앱</title>
+    <style>
+        /* CSS: 밝고 친근한 디자인 및 카드 스타일링 */
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5a623;
+            --success-color: #7ed321;
+            --error-color: #ff5a5f;
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: #e1e8ed;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        /* 문제 표시 영역 */
+        .question-area {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 3px dashed var(--primary-color);
+            border-radius: 15px;
+        }
+
+        .question-text {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        /* 답안 조립 영역 */
+        .answer-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        #answer-zone {
+            min-height: 80px;
+            background: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 15px;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        #answer-zone.drag-over {
+            background: #e3f2fd;
+            border-color: var(--primary-color);
+        }
+
+        /* 선택지 카드 영역 */
+        .choices-section {
+            margin-bottom: 30px;
+        }
+
+        #choices-zone {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        /* 카드 공통 스타일 */
+        .card {
+            background: var(--card-bg);
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: inline-block;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            border-color: var(--primary-color);
+        }
+
+        .card:active {
+            transform: translateY(0);
+        }
+
+        .card.dragging {
+            opacity: 0.5;
+        }
+
+        /* 하단 버튼 영역 */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+        }
+
+        #submit-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        #submit-btn:hover {
+            background-color: #357abd;
+        }
+
+        #next-btn {
+            background-color: var(--success-color);
+            color: white;
+            display: none; /* 정답 후에만 표시 */
+        }
+
+        #next-btn:hover {
+            background-color: #69b01c;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* 피드백 영역 */
+        #feedback {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            min-height: 2em;
+        }
+
+        .feedback-correct { color: var(--success-color); }
+        .feedback-wrong { color: var(--error-color); }
+        .hint-text {
+            font-size: 1.1rem;
+            color: #777;
+            margin-top: 5px;
+            font-weight: normal;
+        }
+
+        /* 결과 모달 스타일 */
+        #result-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-content h2 { font-size: 2.5rem; color: var(--primary-color); }
+        .modal-content p { font-size: 1.5rem; margin: 20px 0; }
+
+        @media (max-width: 600px) {
+            .question-text { font-size: 2rem; }
+            .card { font-size: 1.2rem; padding: 8px 15px; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🧩 곱셈공식 조립하기</h1>
+        <div class="stats">
+            <span>문제: <span id="current-idx">1</span> / <span id="total-cnt">10</span></span>
+            <span>맞힌 개수: <span id="score">0</span></span>
+        </div>
+    </header>
+
+    <main>
+        <!-- 문제 제시 -->
+        <div class="question-area">
+            <div class="question-text" id="question-display">(a + b)²</div>
+        </div>
+
+        <!-- 답안 조립 영역 -->
+        <div class="answer-section">
+            <div class="section-title">여기에 카드를 끌어다 놓거나 클릭해서 완성하세요:</div>
+            <div id="answer-zone"></div>
+        </div>
+
+        <!-- 선택지 카드 영역 -->
+        <div class="choices-section">
+            <div class="section-title">선택지 (오답이 섞여 있으니 주의하세요!):</div>
+            <div id="choices-zone"></div>
+        </div>
+
+        <!-- 피드백 및 힌트 -->
+        <div id="feedback"></div>
+
+        <!-- 버튼 -->
+        <div class="controls">
+            <button id="submit-btn">답 제출하기</button>
+            <button id="next-btn">다음 문제</button>
+        </div>
+    </main>
+</div>
+
+<!-- 최종 결과 모달 -->
+<div id="result-modal">
+    <div class="modal-content">
+        <h2>🎉 연습 완료!</h2>
+        <p id="final-score-text">당신의 점수는 10 / 10 입니다.</p>
+        <button onclick="location.reload()">다시 시작하기</button>
+    </div>
+</div>
+
+<script>
+    /**
+     * 문제 은행 (questionBank)
+     * q: 문제 식
+     * correct: 정답 카드의 순서 배열 (문자열 일치 여부로 판단)
+     * choices: 오답 카드를 포함한 전체 선택지 풀
+     * hint: 오답 시 제공할 힌트
+     */
+    const questionBank = [
+        {
+            q: "(a + b)²",
+            correct: ["a²", "+", "2ab", "+", "b²"],
+            choices: ["a²", "+", "2ab", "+", "b²", "2a", "2b", "a²b²", "-", "ab"],
+            hint: "완전제곱식은 (첫째항)² + 2×(첫째항)×(둘째항) + (둘째항)² 형태입니다."
+        },
+        {
+            q: "(a - b)²",
+            correct: ["a²", "-", "2ab", "+", "b²"],
+            choices: ["a²", "-", "2ab", "+", "b²", "a²", "-", "b²", "2ab", "+", "-2ab"],
+            hint: "중간항의 부호가 마이너스(-)임에 주의하세요! 마지막 항은 항상 플러스(+)입니다."
+        },
+        {
+            q: "(a + b)(a - b)",
+            correct: ["a²", "-", "b²"],
+            choices: ["a²", "-", "b²", "a²", "+", "b²", "2ab", "a", "b", "-a²"],
+            hint: "합차 공식은 (제곱) - (제곱)으로 간단히 정리됩니다."
+        },
+        {
+            q: "(x + 3)(x + 5)",
+            correct: ["x²", "+", "8x", "+", "15"],
+            choices: ["x²", "+", "8x", "+", "15", "x²", "15x", "8", "2x", "+", "3x", "5x"],
+            hint: "중간항은 (3+5)x이고, 상수항은 3×5입니다."
+        },
+        {
+            q: "(2x + 3)²",
+            correct: ["4x²", "+", "12x", "+", "9"],
+            choices: ["4x²", "+", "12x", "+", "9", "2x²", "6x", "12", "4x", "9x", "6"],
+            hint: "(2x)²은 4x²입니다. 중간항 2×(2x)×3을 잊지 마세요."
+        },
+        {
+            q: "(x - 4)(x + 5)",
+            correct: ["x²", "+", "x", "-", "20"],
+            choices: ["x²", "+", "x", "-", "20", "x²", "-", "x", "+", "20", "9x", "-9x", "x²"],
+            hint: "중간항은 (-4 + 5)x이므로 +x가 됩니다. 상수항은 -4 × 5입니다."
+        },
+        {
+            q: "(3a - b)²",
+            correct: ["9a²", "-", "6ab", "+", "b²"],
+            choices: ["9a²", "-", "6ab", "+", "b²", "3a²", "6a", "6b", "-3ab", "9a", "b"],
+            hint: "(3a)²은 9a²입니다. 중간항은 2×(3a)×(-b)입니다."
+        },
+        {
+            q: "(2x + 1)(2x - 1)",
+            correct: ["4x²", "-", "1"],
+            choices: ["4x²", "-", "1", "4x²", "+", "1", "2x²", "4x", "1", "-", "2"],
+            hint: "(2x)² - (1)² 형태의 합차 공식입니다."
+        },
+        {
+            q: "(x - 7)(x + 3)",
+            correct: ["x²", "-", "4x", "-", "21"],
+            choices: ["x²", "-", "4x", "-", "21", "x²", "+", "4x", "-", "21", "10x", "-10x", "21"],
+            hint: "중간항은 (-7 + 3)x이고 상수항은 (-7) × 3입니다."
+        },
+        {
+            q: "(5x + 2)²",
+            correct: ["25x²", "+", "20x", "+", "4"],
+            choices: ["25x²", "+", "20x", "+", "4", "10x²", "20", "10x", "25", "4x", "5x²"],
+            hint: "(5x)²은 25x²이고, 중간항은 2×(5x)×2입니다."
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let userAssembly = []; // 사용자가 선택한 카드들을 담는 배열
+
+    const questionDisplay = document.getElementById('question-display');
+    const answerZone = document.getElementById('answer-zone');
+    const choicesZone = document.getElementById('choices-zone');
+    const feedback = document.getElementById('feedback');
+    const submitBtn = document.getElementById('submit-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const currentIdxText = document.getElementById('current-idx');
+    const totalCntText = document.getElementById('total-cnt');
+    const scoreText = document.getElementById('score');
+
+    // 초기화
+    function init() {
+        totalCntText.textContent = questionBank.length;
+        loadQuestion();
+    }
+
+    // 문제 로드
+    function loadQuestion() {
+        const currentQ = questionBank[currentQuestionIndex];
+        questionDisplay.textContent = currentQ.q;
+        currentIdxText.textContent = currentQuestionIndex + 1;
+        
+        // 초기화
+        userAssembly = [];
+        renderAnswerZone();
+        feedback.innerHTML = "";
+        nextBtn.style.display = "none";
+        submitBtn.style.display = "inline-block";
+
+        // 선택지 셔플 및 렌더링
+        const shuffledChoices = [...currentQ.choices].sort(() => Math.random() - 0.5);
+        choicesZone.innerHTML = "";
+        shuffledChoices.forEach((choice, index) => {
+            const card = createCard(choice, index, 'choice');
+            choicesZone.appendChild(card);
+        });
+    }
+
+    // 카드 생성 함수
+    function createCard(text, id, type) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.textContent = text;
+        card.draggable = true;
+        card.dataset.value = text;
+
+        // 클릭 이벤트 (답안 추가/제거)
+        card.addEventListener('click', () => {
+            if (type === 'choice') {
+                addToAnswer(text);
+            } else {
+                removeFromAnswer(id);
+            }
+        });
+
+        // 드래그 앤 드롭 이벤트
+        card.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', text);
+            card.classList.add('dragging');
+        });
+
+        card.addEventListener('dragend', () => {
+            card.classList.remove('dragging');
+        });
+
+        return card;
+    }
+
+    // 답안 영역 렌더링
+    function renderAnswerZone() {
+        answerZone.innerHTML = "";
+        userAssembly.forEach((text, index) => {
+            const card = createCard(text, index, 'answer');
+            answerZone.appendChild(card);
+        });
+        
+        if (userAssembly.length === 0) {
+            answerZone.innerHTML = '<span style="color: #ccc;">카드를 드래그하거나 클릭하세요</span>';
+        }
+    }
+
+    // 답안에 추가
+    function addToAnswer(text) {
+        userAssembly.push(text);
+        renderAnswerZone();
+    }
+
+    // 답안에서 제거
+    function removeFromAnswer(index) {
+        userAssembly.splice(index, 1);
+        renderAnswerZone();
+    }
+
+    // 드래그 앤 드롭 처리 (answerZone)
+    answerZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        answerZone.classList.add('drag-over');
+    });
+
+    answerZone.addEventListener('dragleave', () => {
+        answerZone.classList.remove('drag-over');
+    });
+
+    answerZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        answerZone.classList.remove('drag-over');
+        const text = e.dataTransfer.getData('text/plain');
+        if (text) {
+            addToAnswer(text);
+        }
+    });
+
+    // 정답 확인
+    submitBtn.addEventListener('click', () => {
+        if (userAssembly.length === 0) {
+            feedback.innerHTML = '<div class="feedback-wrong">답안을 조립해 주세요!</div>';
+            return;
+        }
+
+        const currentQ = questionBank[currentQuestionIndex];
+        const isCorrect = checkAnswer(userAssembly, currentQ.correct);
+
+        if (isCorrect) {
+            score++;
+            scoreText.textContent = score;
+            feedback.innerHTML = '<div class="feedback-correct">정답입니다! 훌륭해요! 👏</div>';
+            submitBtn.style.display = "none";
+            nextBtn.style.display = "inline-block";
+        } else {
+            feedback.innerHTML = `
+                <div class="feedback-wrong">틀렸습니다. 다시 한번 생각해볼까요?</div>
+                <div class="hint-text">💡 힌트: ${currentQ.hint}</div>
+            `;
+        }
+    });
+
+    function checkAnswer(userArr, correctArr) {
+        if (userArr.length !== correctArr.length) return false;
+        for (let i = 0; i < userArr.length; i++) {
+            if (userArr[i] !== correctArr[i]) return false;
+        }
+        return true;
+    }
+
+    // 다음 문제로
+    nextBtn.addEventListener('click', () => {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < questionBank.length) {
+            loadQuestion();
+        } else {
+            showFinalResult();
+        }
+    });
+
+    // 최종 결과 표시
+    function showFinalResult() {
+        const modal = document.getElementById('result-modal');
+        const resultText = document.getElementById('final-score-text');
+        resultText.textContent = `당신의 점수는 ${score} / ${questionBank.length} 입니다.`;
+        modal.style.display = 'flex';
+    }
+
+    // 시작
+    init();
+</script>
+
+</body>
+</html>
