@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>삼각함수 그래프 맞추기 게임</title>
+    <style>
+        /* CSS: 디자인 및 레이아웃 */
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5a623;
+            --success-color: #7ed321;
+            --error-color: #d0021b;
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* 헤더 및 진행률 바 */
+        header {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            margin: 10px 0;
+            height: 12px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        /* 그래프 영역 */
+        .game-container {
+            width: 95%;
+            max-width: 900px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .graph-area {
+            position: relative;
+            width: 100%;
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+        }
+
+        /* 문제 및 선택지 */
+        .question-text {
+            font-size: 1.4rem;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .choices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .choice-card {
+            background: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .choice-card:hover {
+            border-color: var(--primary-color);
+            background: #eef6ff;
+        }
+
+        .choice-card.selected {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(74,144,226,0.3);
+        }
+
+        /* 컨트롤 버튼 */
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .btn-submit { background-color: var(--primary-color); color: white; }
+        .btn-next { background-color: var(--success-color); color: white; display: none; }
+        .btn-hint { background-color: var(--secondary-color); color: white; }
+        .btn-explain { background-color: #666; color: white; display: none; }
+
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 메시지 및 힌트 */
+        #message {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .explanation-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-left: 5px solid #666;
+            display: none;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* 최종 결과 모달 */
+        #result-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .analysis-item {
+            text-align: left;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .choices-grid { grid-template-columns: 1fr 1fr; }
+            .question-text { font-size: 1.1rem; }
+            .choice-card { font-size: 1rem; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>📉 삼각함수 그래프 챌린지</h1>
+        <div class="stats">
+            <span>문제: <span id="current-q-num">1</span> / <span id="total-q-num">15</span></span>
+            <span>점수: <span id="score">0</span></span>
+        </div>
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+    </header>
+
+    <div class="game-container">
+        <!-- 그래프 캔버스 영역 -->
+        <div class="graph-area">
+            <canvas id="graphCanvas"></canvas>
+        </div>
+
+        <div class="question-text">이 그래프를 나타내는 알맞은 함수식을 선택하세요.</div>
+
+        <!-- 보기 카드 영역 -->
+        <div id="choices" class="choices-grid"></div>
+
+        <!-- 피드백 메시지 -->
+        <div id="message"></div>
+        <div id="explanation" class="explanation-box"></div>
+
+        <!-- 버튼 제어 -->
+        <div class="controls">
+            <button id="hint-btn" class="btn-hint" onclick="showHint()">힌트 보기</button>
+            <button id="submit-btn" class="btn-submit" onclick="checkAnswer()">답 제출하기</button>
+            <button id="next-btn" class="btn-next" onclick="nextQuestion()">다음 문제로</button>
+            <button id="explain-btn" class="btn-explain" onclick="toggleExplanation()">해설 보기</button>
+        </div>
+    </div>
+
+    <!-- 결과 화면 -->
+    <div id="result-modal">
+        <div class="modal-content">
+            <h2>학습 완료! 🎉</h2>
+            <div id="final-stats" style="font-size: 1.2rem; margin: 20px 0;"></div>
+            <div id="analysis-report"></div>
+            <button class="btn-submit" style="margin-top:20px" onclick="location.reload()">다시 시작하기</button>
+        </div>
+    </div>
+
+<script>
+    /**
+     * [문제 은행 데이터 구조]
+     * q: 문제 발문
+     * answer: 정답 텍스트 (UI 표시용)
+     * choices: 선택지 배열
+     * hint: 오답 시 제공할 단계별 힌트
+     * graphData: { type: 'sin'|'cos'|'tan', a: 진폭, b: 주기계수, c: x축이동, d: y축이동 }
+     * category: 최종 분석을 위한 분류 (amplitude, period, shift, basic)
+     */
+    const questionBank = [
+        {
+            q: "기본적인 사인함수의 그래프입니다.",
+            answer: "y = sin x",
+            choices: ["y = sin x", "y = cos x", "y = -sin x", "y = 2sin x"],
+            hint: "원점을 지나고 (π/2, 1)을 지나는 곡선입니다.",
+            graphData: { type: 'sin', a: 1, b: 1, c: 0, d: 0 },
+            category: "basic"
+        },
+        {
+            q: "기본적인 코사인함수의 그래프입니다.",
+            answer: "y = cos x",
+            choices: ["y = cos x", "y = sin x", "y = -cos x", "y = cos(2x)"],
+            hint: "x=0일 때 y=1(최댓값)에서 시작합니다. y축에 대하여 대칭입니다.",
+            graphData: { type: 'cos', a: 1, b: 1, c: 0, d: 0 },
+            category: "basic"
+        },
+        {
+            q: "기본적인 탄젠트함수의 그래프입니다.",
+            answer: "y = tan x",
+            choices: ["y = tan x", "y = sin x", "y = cos x", "y = tan(2x)"],
+            hint: "주기가 π이며, x=π/2 지점에서 점근선을 가집니다.",
+            graphData: { type: 'tan', a: 1, b: 1, c: 0, d: 0 },
+            category: "basic"
+        },
+        {
+            q: "사인함수가 x축에 대하여 대칭이동되었습니다.",
+            answer: "y = -sin x",
+            choices: ["y = -sin x", "y = sin x", "y = -cos x", "y = sin(-x)"],
+            hint: "기본 사인 그래프를 위아래로 뒤집은 모양입니다.",
+            graphData: { type: 'sin', a: -1, b: 1, c: 0, d: 0 },
+            category: "basic"
+        },
+        {
+            q: "코사인함수가 x축에 대하여 대칭이동되었습니다.",
+            answer: "y = -cos x",
+            choices: ["y = -cos x", "y = cos x", "y = -sin x", "y = cos(x-π)"],
+            hint: "x=0일 때 최솟값 -1을 가집니다.",
+            graphData: { type: 'cos', a: -1, b: 1, c: 0, d: 0 },
+            category: "basic"
+        },
+        {
+            q: "최댓값과 최솟값이 변했습니다. 진폭을 확인하세요.",
+            answer: "y = 2sin x",
+            choices: ["y = 2sin x", "y = sin(2x)", "y = sin x + 2", "y = 1/2 sin x"],
+            hint: "최댓값이 2, 최솟값이 -2입니다. 진폭이 2배가 되었습니다.",
+            graphData: { type: 'sin', a: 2, b: 1, c: 0, d: 0 },
+            category: "amplitude"
+        },
+        {
+            q: "그래프의 폭이 줄어들었습니다.",
+            answer: "y = 1/2 sin x",
+            choices: ["y = 1/2 sin x", "y = sin(1/2 x)", "y = 2sin x", "y = sin x - 1/2"],
+            hint: "최댓값이 0.5이고 최솟값이 -0.5입니다.",
+            graphData: { type: 'sin', a: 0.5, b: 1, c: 0, d: 0 },
+            category: "amplitude"
+        },
+        {
+            q: "코사인 그래프의 진폭이 변했습니다.",
+            answer: "y = 2cos x",
+            choices: ["y = 2cos x", "y = cos(2x)", "y = cos x + 1", "y = -2cos x"],
+            hint: "x=0일 때 y의 값이 2입니다.",
+            graphData: { type: 'cos', a: 2, b: 1, c: 0, d: 0 },
+            category: "amplitude"
+        },
+        {
+            q: "그래프가 더 촘촘해졌습니다. 주기를 계산해보세요.",
+            answer: "y = sin(2x)",
+            choices: ["y = sin(2x)", "y = 2sin x", "y = sin(x/2)", "y = cos(2x)"],
+            hint: "한 주기가 2π가 아니라 π입니다. x의 계수가 주기를 결정합니다.",
+            graphData: { type: 'sin', a: 1, b: 2, c: 0, d: 0 },
+            category: "period"
+        },
+        {
+            q: "코사인 그래프의 주기가 변했습니다.",
+            answer: "y = cos(2x)",
+            choices: ["y = cos(2x)", "y = 2cos x", "y = cos(x/2)", "y = sin(2x)"],
+            hint: "0부터 π 사이에 코사인 모양 한 사이클이 다 들어있습니다.",
+            graphData: { type: 'cos', a: 1, b: 2, c: 0, d: 0 },
+            category: "period"
+        },
+        {
+            q: "그래프가 오른쪽으로 이동한 것 같네요.",
+            answer: "y = sin(x - π/2)",
+            choices: ["y = sin(x - π/2)", "y = sin(x + π/2)", "y = cos x", "y = sin x - π/2"],
+            hint: "기본 사인 그래프가 오른쪽으로 π/2만큼 평행이동했습니다. 식에서는 -(이동량)입니다.",
+            graphData: { type: 'sin', a: 1, b: 1, c: Math.PI/2, d: 0 },
+            category: "shift"
+        },
+        {
+            q: "그래프가 왼쪽으로 이동했습니다.",
+            answer: "y = sin(x + π/2)",
+            choices: ["y = sin(x + π/2)", "y = sin(x - π/2)", "y = -sin x", "y = cos(x + π/2)"],
+            hint: "x=0일 때 이미 사인 그래프의 최고점(1)에 도달해 있습니다.",
+            graphData: { type: 'sin', a: 1, b: 1, c: -Math.PI/2, d: 0 },
+            category: "shift"
+        },
+        {
+            q: "코사인 그래프가 평행이동되었습니다.",
+            answer: "y = cos(x - π/2)",
+            choices: ["y = cos(x - π/2)", "y = cos(x + π/2)", "y = sin x", "y = cos x - π/2"],
+            hint: "원래 x=0에서 1이어야 하는데, x=π/2에서 1이 되었습니다.",
+            graphData: { type: 'cos', a: 1, b: 1, c: Math.PI/2, d: 0 },
+            category: "shift"
+        },
+        {
+            q: "코사인 그래프가 왼쪽으로 평행이동되었습니다.",
+            answer: "y = cos(x + π/2)",
+            choices: ["y = cos(x + π/2)", "y = cos(x - π/2)", "y = -sin x", "y = sin(x + π/2)"],
+            hint: "x=0일 때 y=0이며, 감소하고 있는 그래프입니다.",
+            graphData: { type: 'cos', a: 1, b: 1, c: -Math.PI/2, d: 0 },
+            category: "shift"
+        },
+        {
+            q: "주기도 변하고 대칭이동도 되었습니다.",
+            answer: "y = -sin(2x)",
+            choices: ["y = -sin(2x)", "y = sin(2x)", "y = -2sin x", "y = -sin(x/2)"],
+            hint: "주기가 π이고, 0 근처에서 그래프가 아래로 내려갑니다.",
+            graphData: { type: 'sin', a: -1, b: 2, c: 0, d: 0 },
+            category: "period"
+        },
+        {
+            q: "복합적인 변화가 있는 코사인 그래프입니다.",
+            answer: "y = -cos(2x)",
+            choices: ["y = -cos(2x)", "y = cos(2x)", "y = -2cos x", "y = cos(x/2)"],
+            hint: "주기가 π이고, x=0일 때 y=-1입니다.",
+            graphData: { type: 'cos', a: -1, b: 2, c: 0, d: 0 },
+            category: "period"
+        }
+    ];
+
+    // 게임 상태 변수
+    let currentIdx = 0;
+    let score = 0;
+    let selectedChoice = null;
+    let wrongAttempts = 0;
+    let statsTracker = { amplitude: 0, period: 0, shift: 0, basic: 0, total: 0 };
+    let correctTracker = { amplitude: 0, period: 0, shift: 0, basic: 0 };
+
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 초기화 및 게임 시작
+    function initGame() {
+        // 캔버스 실제 크기 설정
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+
+        updateStats();
+        loadQuestion();
+    }
+
+    // 문제 로드
+    function loadQuestion() {
+        const q = questionBank[currentIdx];
+        selectedChoice = null;
+        wrongAttempts = 0;
+        
+        document.getElementById('current-q-num').innerText = currentIdx + 1;
+        document.getElementById('total-q-num').innerText = questionBank.length;
+        document.getElementById('progress-bar').style.width = `${((currentIdx) / questionBank.length) * 100}%`;
+        
+        // 메시지 및 설명 초기화
+        document.getElementById('message').style.display = 'none';
+        document.getElementById('explanation').style.display = 'none';
+        document.getElementById('explain-btn').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('submit-btn').style.display = 'inline-block';
+        document.getElementById('hint-btn').disabled = false;
+
+        // 보기 섞기 및 렌더링
+        const shuffledChoices = [...q.choices].sort(() => Math.random() - 0.5);
+        const choicesDiv = document.getElementById('choices');
+        choicesDiv.innerHTML = '';
+        shuffledChoices.forEach(choice => {
+            const card = document.createElement('div');
+            card.className = 'choice-card';
+            card.innerText = choice;
+            card.onclick = () => selectChoice(card, choice);
+            choicesDiv.appendChild(card);
+        });
+
+        drawGraph(q.graphData);
+    }
+
+    // 그래프 그리기 로직 (Canvas)
+    function drawGraph(data) {
+        const w = canvas.width / (window.devicePixelRatio || 1);
+        const h = canvas.height / (window.devicePixelRatio || 1);
+        const centerX = w / 2;
+        const centerY = h / 2;
+        const unitX = w / 8; // x축 눈금 간격 (π/2 단위)
+        const unitY = h / 6; // y축 눈금 간격 (1 단위)
+
+        ctx.clearRect(0, 0, w, h);
+
+        // 1. 그리드 및 축 그리기
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 1;
+
+        // 세로선 (x축 눈금)
+        for(let i = -4; i <= 4; i++) {
+            const x = centerX + i * unitX;
+            ctx.beginPath();
+            ctx.moveTo(x, 0); ctx.lineTo(x, h);
+            ctx.stroke();
+            
+            // x축 라벨 (π 표시)
+            ctx.fillStyle = '#666';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            let label = "";
+            if(i === -4) label = "-2π";
+            else if(i === -2) label = "-π";
+            else if(i === 2) label = "π";
+            else if(i === 4) label = "2π";
+            else if(i === 1) label = "π/2";
+            if(label) ctx.fillText(label, x, centerY + 20);
+        }
+
+        // 가로선 (y축 눈금)
+        for(let i = -3; i <= 3; i++) {
+            const y = centerY - i * unitY;
+            ctx.beginPath();
+            ctx.moveTo(0, y); ctx.lineTo(w, y);
+            ctx.stroke();
+            
+            // y축 라벨
+            if(i !== 0) {
+                ctx.fillText(i, centerX - 15, y + 5);
+            }
+        }
+
+        // 메인 축
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(w, centerY); ctx.stroke(); // x축
+        ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, h); ctx.stroke(); // y축
+
+        // 2. 함수 그래프 그리기
+        ctx.strokeStyle = '#4a90e2';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+
+        const { type, a, b, c, d } = data;
+        let first = true;
+
+        for (let px = 0; px <= w; px++) {
+            // 캔버스 좌표 -> 수학 좌표 (x)
+            const x = (px - centerX) / unitX * (Math.PI / 2);
+            let y;
+
+            if (type === 'sin') y = a * Math.sin(b * (x - c)) + d;
+            else if (type === 'cos') y = a * Math.cos(b * (x - c)) + d;
+            else if (type === 'tan') {
+                y = a * Math.tan(b * (x - c)) + d;
+                // 탄젠트 점근선 처리 (값이 튀는 현상 방지)
+                if (Math.abs(y) > 10) { first = true; continue; }
+            }
+
+            // 수학 좌표 (y) -> 캔버스 좌표
+            const py = centerY - (y * unitY);
+
+            if (first) {
+                ctx.moveTo(px, py);
+                first = false;
+            } else {
+                ctx.lineTo(px, py);
+            }
+        }
+        ctx.stroke();
+    }
+
+    // 선택지 선택
+    function selectChoice(el, val) {
+        document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedChoice = val;
+    }
+
+    // 답 제출 및 판별 로직
+    function checkAnswer() {
+        if (!selectedChoice) {
+            alert("답을 선택해주세요!");
+            return;
+        }
+
+        const q = questionBank[currentIdx];
+        const msgDiv = document.getElementById('message');
+        msgDiv.style.display = 'block';
+
+        if (selectedChoice === q.answer) {
+            // 정답
+            msgDiv.innerText = "정답입니다! 참 잘했어요! 👏";
+            msgDiv.style.backgroundColor = '#dff0d8';
+            msgDiv.style.color = '#3c763d';
+            
+            if(wrongAttempts === 0) {
+                score += 10;
+                correctTracker[q.category]++;
+            }
+            statsTracker[q.category]++;
+            statsTracker.total++;
+
+            document.getElementById('submit-btn').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'inline-block';
+            document.getElementById('explain-btn').style.display = 'inline-block';
+            document.getElementById('hint-btn').disabled = true;
+            updateStats();
+        } else {
+            // 오답
+            wrongAttempts++;
+            msgDiv.innerText = "아쉬워요! 다시 한번 그래프를 살펴볼까요?";
+            msgDiv.style.backgroundColor = '#f2dede';
+            msgDiv.style.color = '#a94442';
+        }
+    }
+
+    // 힌트 시스템
+    function showHint() {
+        const q = questionBank[currentIdx];
+        const msgDiv = document.getElementById('message');
+        msgDiv.style.display = 'block';
+        msgDiv.style.backgroundColor = '#fcf8e3';
+        msgDiv.style.color = '#8a6d3b';
+        msgDiv.innerText = "💡 힌트: " + q.hint;
+    }
+
+    // 해설 보기
+    function toggleExplanation() {
+        const q = questionBank[currentIdx];
+        const expDiv = document.getElementById('explanation');
+        const data = q.graphData;
+        
+        let text = `<strong>[그래프 해설]</strong><br>`;
+        text += `• 종류: ${data.type === 'sin' ? '사인' : data.type === 'cos' ? '코사인' : '탄젠트'} 함수<br>`;
+        
+        if(data.a !== 1) text += `• 진폭: 기본형의 ${Math.abs(data.a)}배입니다. (최댓값: ${Math.abs(data.a)}, 최솟값: ${-Math.abs(data.a)})<br>`;
+        
+        const period = (data.type === 'tan' ? 'π' : '2π') + (data.b !== 1 ? ` / ${data.b}` : '');
+        if(data.b !== 1) text += `• 주기: ${period} 로 변했습니다.<br>`;
+        
+        if(data.c !== 0) text += `• 평행이동: x축 방향으로 ${data.c > 0 ? '오른쪽' : '왼쪽'}으로 ${Math.abs(data.c / Math.PI).toFixed(2)}π 만큼 이동했습니다.<br>`;
+        
+        if(data.a < 0) text += `• 대칭: x축에 대하여 대칭이동(위아래 뒤집힘) 되었습니다.<br>`;
+
+        expDiv.innerHTML = text;
+        expDiv.style.display = expDiv.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // 점수 및 상태 업데이트
+    function updateStats() {
+        document.getElementById('score').innerText = score;
+    }
+
+    // 다음 문제 전환 로직
+    function nextQuestion() {
+        currentIdx++;
+        if (currentIdx < questionBank.length) {
+            loadQuestion();
+        } else {
+            showFinalResult();
+        }
+    }
+
+    // 최종 결과 화면 구현 부분
+    function showFinalResult() {
+        const modal = document.getElementById('result-modal');
+        const statsDiv = document.getElementById('final-stats');
+        const reportDiv = document.getElementById('analysis-report');
+        
+        modal.style.display = 'flex';
+        
+        const accuracy = Math.round((statsTracker.total / questionBank.length) * 100);
+        statsDiv.innerHTML = `
+            <strong>최종 점수: ${score}점</strong><br>
+            맞힌 개수: ${currentIdx} / ${questionBank.length}<br>
+        `;
+
+        // 유형별 분석
+        let reportHtml = "<h3>📊 취약 유형 분석</h3>";
+        for(let cat in correctTracker) {
+            const catName = {basic: "기본 그래프", amplitude: "진폭 변화", period: "주기 변화", shift: "평행 이동"}[cat];
+            const count = statsTracker[cat];
+            const correct = correctTracker[cat];
+            const per = count > 0 ? Math.round((correct / count) * 100) : 100;
+            
+            let feedback = per >= 80 ? "완벽합니다!" : per >= 50 ? "조금 더 연습이 필요해요." : "기본 개념을 다시 확인해보세요.";
+            
+            reportHtml += `
+                <div class="analysis-item">
+                    <strong>${catName}</strong>: ${per}% (${correct}/${count})<br>
+                    <small>${feedback}</small>
+                </div>
+            `;
+        }
+        reportDiv.innerHTML = reportHtml;
+    }
+
+    // 창 크기 변경 시 그래프 재렌더링
+    window.onresize = () => {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        drawGraph(questionBank[currentIdx].graphData);
+    };
+
+    // 게임 시작
+    window.onload = initGame;
+
+</script>
+</body>
+</html>

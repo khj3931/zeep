@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>삼각함수 값 매칭 배틀</title>
+    <style>
+        /* CSS: 디자인 및 레이아웃 */
+        :root {
+            --primary: #4e73df;
+            --secondary: #1cc88a;
+            --warning: #f6c23e;
+            --danger: #e74a3b;
+            --dark: #5a5c69;
+            --light: #f8f9fc;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        /* 헤더 정보 레이아웃 */
+        header {
+            width: 100%;
+            background: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .info-bar {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .combo-badge {
+            background: var(--danger);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            animation: bounce 0.5s infinite alternate;
+            display: none;
+        }
+
+        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.1); } }
+
+        /* 진행률 바 */
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: #eee;
+            position: absolute;
+            bottom: 0;
+        }
+        #progress-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* 메인 게임 영역 */
+        .game-wrapper {
+            display: flex;
+            justify-content: space-between;
+            width: 95%;
+            max-width: 1000px;
+            margin: 30px 0;
+            position: relative; /* 연결선 Canvas 배치를 위해 */
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 40%;
+            z-index: 10;
+        }
+
+        /* 카드 스타일 */
+        .card {
+            background: white;
+            border: 3px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .card:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .card.selected { background: var(--primary); color: white; border-color: var(--primary); }
+        .card.matched { background: #e8f5e9; border-color: var(--secondary); color: var(--secondary); cursor: default; }
+
+        /* 연결선 Canvas */
+        #lineCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* 컨트롤 버튼 */
+        .controls {
+            margin-bottom: 40px;
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-check { background: var(--primary); color: white; }
+        .btn-next { background: var(--secondary); color: white; display: none; }
+        .btn-hint { background: var(--warning); color: #333; }
+        .btn-circle { background: var(--dark); color: white; }
+
+        /* 메시지 상자 */
+        #msg-box {
+            position: fixed;
+            bottom: 20px;
+            padding: 15px 30px;
+            border-radius: 30px;
+            color: white;
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+        }
+
+        /* 모달 (단위원 & 결과) */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+
+        #unit-circle-svg {
+            width: 300px;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        /* 별점 시스템 */
+        .stars { font-size: 2rem; color: var(--warning); margin: 10px 0; }
+
+        @media (max-width: 600px) {
+            .card { font-size: 1.1rem; padding: 12px; }
+            .info-bar { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="info-bar">
+            <span>문제: <span id="q-count">1</span>/<span id="q-total">15</span></span>
+            <span>점수: <span id="score">0</span></span>
+            <span id="timer">시간: 60s</span>
+            <span id="combo" class="combo-badge">0 COMBO!</span>
+        </div>
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+    </header>
+
+    <h1 style="margin-top:20px;">⚔️ 삼각함수 값 매칭 배틀</h1>
+    <p id="level-title" style="font-weight:bold; color:var(--dark);">1단계: 기본 특수각</p>
+
+    <div class="game-wrapper" id="game-area">
+        <canvas id="lineCanvas"></canvas>
+        <!-- 왼쪽: 각도 카드 -->
+        <div class="column" id="left-col"></div>
+        <!-- 오른쪽: 값 카드 -->
+        <div class="column" id="right-col"></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-circle" onclick="showUnitCircle()">단위원 보기</button>
+        <button class="btn-hint" onclick="showHint()">힌트</button>
+        <button class="btn-check" id="check-btn" onclick="checkMatches()">채점하기</button>
+        <button class="btn-next" id="next-btn" onclick="nextLevel()">다음 문제</button>
+    </div>
+
+    <div id="msg-box"></div>
+
+    <!-- 단위원 모달 -->
+    <div id="circle-modal" class="modal" onclick="closeModal(this)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>📍 단위원과 사분면</h3>
+            <svg id="unit-circle-svg" viewBox="0 0 200 200">
+                <!-- 축 -->
+                <line x1="10" y1="100" x2="190" y2="100" stroke="#ccc" />
+                <line x1="100" y1="10" x2="100" y2="190" stroke="#ccc" />
+                <!-- 원 -->
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#4e73df" stroke-width="2" />
+                <!-- 사분면 텍스트 -->
+                <text x="150" y="50" font-size="10" fill="#999">All (+)</text>
+                <text x="30" y="50" font-size="10" fill="#999">Sin (+)</text>
+                <text x="30" y="150" font-size="10" fill="#999">Tan (+)</text>
+                <text x="150" y="150" font-size="10" fill="#999">Cos (+)</text>
+                <!-- 동경 표시용 그룹 -->
+                <g id="needle-group"></g>
+            </svg>
+            <p id="circle-desc">현재 문제의 각도들이 위치한 곳입니다.</p>
+            <button class="btn-check" onclick="closeModal(document.getElementById('circle-modal'))">닫기</button>
+        </div>
+    </div>
+
+    <!-- 결과 모달 -->
+    <div id="result-modal" class="modal">
+        <div class="modal-content">
+            <h2>🏆 배틀 종료!</h2>
+            <div class="stars" id="final-stars">⭐⭐⭐</div>
+            <div id="final-stats" style="line-height:1.8; margin: 20px 0;"></div>
+            <button class="btn-check" onclick="location.reload()">다시 도전하기</button>
+        </div>
+    </div>
+
+<script>
+    /**
+     * [문제 은행 데이터 구조]
+     * title: 단계 제목
+     * pairs: { q: 질문(각도), a: 정답(값) } 쌍의 배열
+     * hint: 해당 단계의 학습 팁
+     */
+    const questionBank = [
+        {
+            title: "1단계: 제1사분면 기초 (30°, 45°)",
+            pairs: [
+                {q: "sin30°", a: "1/2"}, {q: "cos60°", a: "1/2"},
+                {q: "tan45°", a: "1"}, {q: "sin45°", a: "√2/2"},
+                {q: "cos45°", a: "√2/2"}
+            ],
+            hint: "45° 계열은 항상 √2/2를 떠올리세요!",
+            difficulty: 1
+        },
+        {
+            title: "2단계: 제1사분면 기초 (60°)",
+            pairs: [
+                {q: "sin60°", a: "√3/2"}, {q: "cos30°", a: "√3/2"},
+                {q: "tan60°", a: "√3"}, {q: "tan30°", a: "√3/3"},
+                {q: "cos0°", a: "1"}
+            ],
+            hint: "sin은 각이 커질수록 값도 커집니다.",
+            difficulty: 1
+        },
+        {
+            title: "3단계: 제2사분면 (이사분면은 Sin만 +)",
+            pairs: [
+                {q: "sin120°", a: "√3/2"}, {q: "cos120°", a: "-1/2"},
+                {q: "sin135°", a: "√2/2"}, {q: "cos135°", a: "-√2/2"},
+                {q: "tan135°", a: "-1"}, {q: "sin150°", a: "1/2"}
+            ],
+            hint: "2사분면(90°~180°)에서는 Sin만 양수(+)입니다.",
+            difficulty: 2
+        },
+        {
+            title: "4단계: 제3사분면 (삼사분면은 Tan만 +)",
+            pairs: [
+                {q: "sin210°", a: "-1/2"}, {q: "cos210°", a: "-√3/2"},
+                {q: "tan210°", a: "√3/3"}, {q: "sin225°", a: "-√2/2"},
+                {q: "cos225°", a: "-√2/2"}, {q: "tan225°", a: "1"}
+            ],
+            hint: "3사분면(180°~270°)에서는 Tan만 양수(+)입니다.",
+            difficulty: 2
+        },
+        {
+            title: "5단계: 제4사분면 (사사분면은 Cos만 +)",
+            pairs: [
+                {q: "sin300°", a: "-√3/2"}, {q: "cos300°", a: "1/2"},
+                {q: "tan300°", a: "-√3"}, {q: "sin315°", a: "-√2/2"},
+                {q: "cos315°", a: "√2/2"}, {q: "tan330°", a: "-√3/3"}
+            ],
+            hint: "4사분면(270°~360°)에서는 Cos만 양수(+)입니다.",
+            difficulty: 2
+        },
+        // ... (15문제 이상 구성을 위해 반복 및 믹스 데이터 추가 가능)
+    ];
+
+    // 부족한 문제를 자동으로 생성 (다양한 각도 조합)
+    function expandQuestionBank() {
+        const angles = [0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330, 360];
+        while(questionBank.length < 15) {
+            let mixedPairs = [];
+            for(let i=0; i<6; i++) {
+                const ang = angles[Math.floor(Math.random() * angles.length)];
+                const type = ['sin', 'cos', 'tan'][Math.floor(Math.random() * 3)];
+                mixedPairs.push({q: `${type}${ang}°`, a: calculateVal(type, ang)});
+            }
+            questionBank.push({
+                title: `${questionBank.length + 1}단계: 랜덤 챌린지`,
+                pairs: mixedPairs,
+                hint: "부호 결정은 '얼싸안코(All-Sin-Tan-Cos)'를 기억하세요!",
+                difficulty: 3
+            });
+        }
+    }
+
+    function calculateVal(t, a) {
+        const rad = a * Math.PI / 180;
+        let v = 0;
+        if(t === 'sin') v = Math.sin(rad);
+        else if(t === 'cos') v = Math.cos(rad);
+        else v = Math.tan(rad);
+        
+        // 가독성 좋은 문자열로 변환 (근사치 매칭)
+        const fixed = v.toFixed(3);
+        if(fixed == "0.500") return "1/2";
+        if(fixed == "-0.500") return "-1/2";
+        if(fixed == "0.707") return "√2/2";
+        if(fixed == "-0.707") return "-√2/2";
+        if(fixed == "0.866") return "√3/2";
+        if(fixed == "-0.866") return "-√3/2";
+        if(fixed == "1.732") return "√3";
+        if(fixed == "-1.732") return "-√3";
+        if(fixed == "0.577") return "√3/3";
+        if(fixed == "-0.577") return "-√3/3";
+        if(fixed == "1.000") return "1";
+        if(fixed == "-1.000") return "-1";
+        if(fixed == "0.000") return "0";
+        return "값 없음";
+    }
+
+    // 게임 상태 변수
+    let currentLevelIdx = 0;
+    let score = 0;
+    let combo = 0;
+    let maxCombo = 0;
+    let timeLeft = 60;
+    let timerInterval;
+    let selectedLeft = null;
+    let selectedRight = null;
+    let currentMatches = []; // [{leftId, rightId}]
+    let levelSolved = false;
+
+    const canvas = document.getElementById('lineCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 게임 시작 초기화
+    function initGame() {
+        expandQuestionBank();
+        loadLevel();
+        startTimer();
+        window.addEventListener('resize', resizeCanvas);
+    }
+
+    // 단계 로드
+    function loadLevel() {
+        const level = questionBank[currentLevelIdx];
+        document.getElementById('level-title').innerText = level.title;
+        document.getElementById('q-count').innerText = currentLevelIdx + 1;
+        document.getElementById('q-total').innerText = questionBank.length;
+        document.getElementById('progress-bar').style.width = `${((currentLevelIdx)/questionBank.length)*100}%`;
+        
+        currentMatches = [];
+        levelSolved = false;
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('check-btn').style.display = 'inline-block';
+
+        const leftCol = document.getElementById('left-col');
+        const rightCol = document.getElementById('right-col');
+        leftCol.innerHTML = '';
+        rightCol.innerHTML = '';
+
+        // 카드 생성 및 셔플
+        const leftData = level.pairs.map((p, i) => ({txt: p.q, id: `L${i}`}));
+        const rightData = level.pairs.map((p, i) => ({txt: p.a, id: `R${i}`}));
+        
+        // 정답 외 오답 카드 추가 (난이도에 따라)
+        const distractors = ["-1", "0", "1", "1/2", "-1/2", "√2/2", "-√2/2", "√3/2", "-√3/2", "√3", "-√3", "√3/3", "-√3/3"];
+        while(rightData.length < 8) {
+            const d = distractors[Math.floor(Math.random()*distractors.length)];
+            if(!rightData.find(r => r.txt === d)) rightData.push({txt: d, id: `D${rightData.length}`});
+        }
+
+        shuffle(leftData).forEach(d => leftCol.appendChild(createCard(d, 'left')));
+        shuffle(rightData).forEach(d => rightCol.appendChild(createCard(d, 'right')));
+
+        resizeCanvas();
+    }
+
+    function createCard(data, type) {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.id = data.id;
+        div.innerText = data.txt;
+        div.onclick = () => selectCard(div, type);
+        return div;
+    }
+
+    // 카드 선택 로직
+    function selectCard(el, type) {
+        if(el.classList.contains('matched') || levelSolved) return;
+
+        if(type === 'left') {
+            if(selectedLeft) selectedLeft.classList.remove('selected');
+            selectedLeft = el;
+        } else {
+            if(selectedRight) selectedRight.classList.remove('selected');
+            selectedRight = el;
+        }
+        el.classList.add('selected');
+
+        // 둘 다 선택되면 연결
+        if(selectedLeft && selectedRight) {
+            makeConnection(selectedLeft, selectedRight);
+        }
+    }
+
+    function makeConnection(l, r) {
+        // 기존에 해당 카드에 연결된 선이 있다면 제거
+        currentMatches = currentMatches.filter(m => m.leftId !== l.id && m.rightId !== r.id);
+        
+        currentMatches.push({leftId: l.id, rightId: r.id});
+        
+        l.classList.remove('selected');
+        r.classList.remove('selected');
+        selectedLeft = null;
+        selectedRight = null;
+        
+        drawLines();
+    }
+
+    // 연결선 그리기 로직 (Canvas)
+    function drawLines() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.setLineDash([]);
+        ctx.lineWidth = 4;
+
+        currentMatches.forEach(match => {
+            const lEl = document.getElementById(match.leftId);
+            const rEl = document.getElementById(match.rightId);
+            if(!lEl || !rEl) return;
+
+            const lRect = lEl.getBoundingClientRect();
+            const rRect = rEl.getBoundingClientRect();
+            const cRect = canvas.getBoundingClientRect();
+
+            const startX = lRect.right - cRect.left;
+            const startY = lRect.top + lRect.height/2 - cRect.top;
+            const endX = rRect.left - cRect.left;
+            const endY = rRect.top + rRect.height/2 - cRect.top;
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            // 부드러운 곡선 효과
+            ctx.bezierCurveTo(startX + 50, startY, endX - 50, endY, endX, endY);
+            ctx.strokeStyle = lEl.classList.contains('matched') ? '#1cc88a' : '#4e73df';
+            ctx.stroke();
+        });
+    }
+
+    // 채점 로직
+    function checkMatches() {
+        const level = questionBank[currentLevelIdx];
+        let correctCount = 0;
+        const totalToMatch = level.pairs.length;
+
+        if(currentMatches.length < totalToMatch) {
+            showMessage("모든 각도의 짝을 찾아주세요!", "warning");
+            return;
+        }
+
+        currentMatches.forEach(match => {
+            const lText = document.getElementById(match.leftId).innerText;
+            const rText = document.getElementById(match.rightId).innerText;
+            
+            const pair = level.pairs.find(p => p.q === lText);
+            if(pair && pair.a === rText) {
+                correctCount++;
+                document.getElementById(match.leftId).classList.add('matched');
+                document.getElementById(match.rightId).classList.add('matched');
+            }
+        });
+
+        if(correctCount === totalToMatch) {
+            // 정답 처리
+            combo++;
+            if(combo > maxCombo) maxCombo = combo;
+            const bonus = combo * 10;
+            score += 100 + bonus;
+            
+            showMessage(`Perfect! ${combo}콤보 보너스 +${bonus}!`, "success");
+            showCombo();
+            
+            levelSolved = true;
+            document.getElementById('check-btn').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'inline-block';
+        } else {
+            // 오답 처리
+            combo = 0;
+            showCombo();
+            showMessage("틀린 연결이 있습니다. 힌트를 확인해보세요!", "danger");
+            // 틀린 카드 표시 지우기 (선택사항: 여기서는 다시 시도하도록 유지)
+        }
+        updateUI();
+        drawLines();
+    }
+
+    function showHint() {
+        showMessage("💡 " + questionBank[currentLevelIdx].hint, "info");
+    }
+
+    function nextLevel() {
+        currentLevelIdx++;
+        if(currentLevelIdx < questionBank.length) {
+            loadLevel();
+        } else {
+            endGame();
+        }
+    }
+
+    // 게임 요소: 타이머 및 콤보
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = `시간: ${timeLeft}s`;
+            if(timeLeft <= 0) endGame();
+        }, 1000);
+    }
+
+    function showCombo() {
+        const badge = document.getElementById('combo');
+        if(combo > 1) {
+            badge.innerText = `${combo} COMBO!`;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // 단위원 시각화
+    function showUnitCircle() {
+        const modal = document.getElementById('circle-modal');
+        const needleGroup = document.getElementById('needle-group');
+        needleGroup.innerHTML = '';
+        
+        const level = questionBank[currentLevelIdx];
+        const anglesSet = new Set();
+        level.pairs.forEach(p => {
+            const match = p.q.match(/\d+/);
+            if(match) anglesSet.add(parseInt(match[0]));
+        });
+
+        anglesSet.forEach(ang => {
+            const rad = (360 - ang) * Math.PI / 180; // SVG 좌표계에 맞춤
+            const x = 100 + 80 * Math.cos(rad);
+            const y = 100 + 80 * Math.sin(rad);
+            
+            needleGroup.innerHTML += `
+                <line x1="100" y1="100" x2="${x}" y2="${y}" stroke="red" stroke-width="2" />
+                <circle cx="${x}" cy="${y}" r="4" fill="red" />
+                <text x="${x+5}" y="${y}" font-size="8" fill="red">${ang}°</text>
+            `;
+        });
+
+        modal.style.display = 'flex';
+    }
+
+    // 최종 결과 화면 구현 부분
+    function endGame() {
+        clearInterval(timerInterval);
+        const modal = document.getElementById('result-modal');
+        const stats = document.getElementById('final-stats');
+        const stars = document.getElementById('final-stars');
+        
+        modal.style.display = 'flex';
+        
+        let starCount = score > 2000 ? "⭐⭐⭐" : score > 1000 ? "⭐⭐" : "⭐";
+        stars.innerText = starCount;
+
+        stats.innerHTML = `
+            최종 점수: <strong>${score}점</strong><br>
+            해결한 단계: ${currentLevelIdx}/${questionBank.length}<br>
+            최대 콤보: ${maxCombo}<br>
+            남은 시간 보너스: ${timeLeft * 2}점
+        `;
+    }
+
+    // 유틸리티 함수들
+    function resizeCanvas() {
+        const area = document.getElementById('game-area');
+        canvas.width = area.offsetWidth;
+        canvas.height = area.offsetHeight;
+        drawLines();
+    }
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function showMessage(text, type) {
+        const box = document.getElementById('msg-box');
+        box.innerText = text;
+        const colors = { success: '#1cc88a', danger: '#e74a3b', warning: '#f6c23e', info: '#4e73df' };
+        box.style.backgroundColor = colors[type];
+        box.style.display = 'block';
+        setTimeout(() => { box.style.display = 'none'; }, 3000);
+    }
+
+    function updateUI() {
+        document.getElementById('score').innerText = score;
+    }
+
+    function closeModal(el) { el.style.display = 'none'; }
+
+    window.onload = initGame;
+
+</script>
+</body>
+</html>
