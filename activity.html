@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>삼각함수 공식 카드 조립 마스터</title>
+    <style>
+        /* 
+           [CSS 스타일 설정]
+           블루 & 화이트 테마를 사용하여 깔끔하고 집중력 있는 디자인을 구현했습니다.
+           빔프로젝터 가독성을 위해 기본 폰트 크기를 크게 설정했습니다.
+        */
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #f8f9fa;
+            --accent-color: #0056b3;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --card-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #e9ecef;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .stats {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* 문제 영역 */
+        #question-area {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        #question-text {
+            font-size: 2.2rem;
+            font-weight: 800;
+            line-height: 1.4;
+            color: #222;
+        }
+
+        /* 답안 조립 영역 */
+        .zone-label {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        #answer-zone {
+            min-height: 100px;
+            border: 3px dashed var(--primary-color);
+            border-radius: 15px;
+            background-color: var(--secondary-color);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 20px;
+            margin-bottom: 40px;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s;
+        }
+
+        #answer-zone.drag-over {
+            background-color: #d1e7ff;
+        }
+
+        /* 선택지 카드 영역 */
+        #choices-zone {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            padding: 20px;
+            background-color: #f1f3f5;
+            border-radius: 15px;
+        }
+
+        /* 카드 공통 스타일 */
+        .card {
+            background-color: var(--card-bg);
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: var(--card-shadow);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 60px;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            border-color: var(--primary-color);
+        }
+
+        .card:active {
+            transform: translateY(0);
+        }
+
+        /* 하단 컨트롤 영역 */
+        .controls {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #submit-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        #submit-btn:hover {
+            background-color: var(--accent-color);
+        }
+
+        #next-btn {
+            background-color: var(--success-color);
+            color: white;
+            display: none;
+        }
+
+        #next-btn:hover {
+            opacity: 0.9;
+        }
+
+        #hint-box {
+            font-size: 1.1rem;
+            color: var(--error-color);
+            font-weight: bold;
+            min-height: 1.5rem;
+            text-align: center;
+        }
+
+        /* 결과 화면 모달 */
+        #result-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .result-content {
+            background: white;
+            padding: 50px;
+            border-radius: 30px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .result-content h2 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .result-stats {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+
+        #restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* 반응형 설정 */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.5rem; }
+            #question-text { font-size: 1.6rem; }
+            .card { font-size: 1.1rem; padding: 10px 15px; }
+            button { padding: 12px 30px; font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>삼각함수 공식 마스터</h1>
+        <div class="stats">
+            진행: <span id="current-index">1</span>/<span id="total-questions">16</span> | 
+            점수: <span id="score">0</span>
+        </div>
+    </header>
+
+    <div id="question-area">
+        <div id="question-text">문제를 불러오는 중...</div>
+    </div>
+
+    <span class="zone-label">카드 조립 영역 (클릭하여 제거)</span>
+    <div id="answer-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
+        <!-- 사용자가 조립한 카드가 여기에 추가됩니다 -->
+    </div>
+
+    <span class="zone-label">선택지 카드 (클릭하거나 드래그하여 추가)</span>
+    <div id="choices-zone">
+        <!-- 무작위로 섞인 카드들이 여기에 나타납니다 -->
+    </div>
+
+    <div class="controls">
+        <div id="hint-box"></div>
+        <div class="btn-group">
+            <button id="submit-btn" onclick="checkAnswer()">답 제출하기</button>
+            <button id="next-btn" onclick="nextQuestion()">다음 문제</button>
+        </div>
+    </div>
+</div>
+
+<!-- 최종 결과 화면 -->
+<div id="result-screen">
+    <div class="result-content">
+        <h2>🎉 학습 완료!</h2>
+        <div class="result-stats" id="final-stats">
+            <!-- 최종 기록이 여기에 표시됩니다 -->
+        </div>
+        <button id="restart-btn" onclick="location.reload()">다시 시작하기</button>
+    </div>
+</div>
+
+<script>
+    /* 
+       [JavaScript 기능 구현]
+       핵심 로직: 문제 은행 관리, 카드 셔플, 채점, UI 업데이트
+    */
+
+    // 1. 문제 은행 (교사 수정 가능)
+    // q: 문제, correct: 정답 배열, choices: 오답을 포함한 전체 카드 풀, hint: 오답 시 힌트
+    const questionBank = [
+        {
+            q: "tanθ 를 sinθ와 cosθ로 나타내시오.",
+            correct: ["sinθ", "/", "cosθ"],
+            choices: ["sinθ", "cosθ", "tanθ", "/", "1", "sin²θ", "cos²θ"],
+            hint: "tanθ는 sinθ를 cosθ로 나눈 값입니다."
+        },
+        {
+            q: "cotθ 를 sinθ와 cosθ로 나타내시오.",
+            correct: ["cosθ", "/", "sinθ"],
+            choices: ["sinθ", "cosθ", "cotθ", "/", "1", "sin²θ", "cos²θ"],
+            hint: "cotθ는 tanθ의 역수이며, cosθ를 sinθ로 나눈 값입니다."
+        },
+        {
+            q: "cscθ 를 sinθ로 나타내시오.",
+            correct: ["1", "/", "sinθ"],
+            choices: ["1", "/", "sinθ", "cosθ", "cscθ", "secθ", "sin²θ"],
+            hint: "cscθ(코시컨트)는 sinθ의 역수입니다."
+        },
+        {
+            q: "secθ 를 cosθ로 나타내시오.",
+            correct: ["1", "/", "cosθ"],
+            choices: ["1", "/", "cosθ", "sinθ", "secθ", "cscθ", "cos²θ"],
+            hint: "secθ(시컨트)는 cosθ의 역수입니다."
+        },
+        {
+            q: "cotθ 를 tanθ로 나타내시오.",
+            correct: ["1", "/", "tanθ"],
+            choices: ["1", "/", "tanθ", "cotθ", "sinθ", "cosθ", "tan²θ"],
+            hint: "cotθ(코탄젠트)는 tanθ의 역수입니다."
+        },
+        {
+            q: "sin²θ + cos²θ = ?",
+            correct: ["1"],
+            choices: ["1", "0", "2", "sinθ", "cosθ", "tan²θ", "sec²θ"],
+            hint: "가장 기본적인 피타고라스 삼각항등식입니다. 값은 항상 1입니다."
+        },
+        {
+            q: "sin²θ = ?",
+            correct: ["1", "-", "cos²θ"],
+            choices: ["1", "-", "cos²θ", "cosθ", "sinθ", "+", "tan²θ"],
+            hint: "sin²θ + cos²θ = 1 공식에서 cos²θ를 이항해 보세요."
+        },
+        {
+            q: "cos²θ = ?",
+            correct: ["1", "-", "sin²θ"],
+            choices: ["1", "-", "sin²θ", "sinθ", "cosθ", "+", "cos²θ"],
+            hint: "sin²θ + cos²θ = 1 공식에서 sin²θ를 이항해 보세요."
+        },
+        {
+            q: "1 + tan²θ = ?",
+            correct: ["sec²θ"],
+            choices: ["sec²θ", "csc²θ", "sin²θ", "cos²θ", "tan²θ", "1", "cot²θ"],
+            hint: "한(1) 번 타(tan)면 새(sec)까매진다!"
+        },
+        {
+            q: "1 + cot²θ = ?",
+            correct: ["csc²θ"],
+            choices: ["csc²θ", "sec²θ", "tan²θ", "cot²θ", "1", "sin²θ", "cos²θ"],
+            hint: "한(1) 번 코(cot)가 타면 코(csc)가 새까매진다!"
+        },
+        {
+            q: "sinθ + cosθ = k 일 때,<br>sinθcosθ 를 구하시오.",
+            correct: ["(", "k²", "-", "1", ")", "/", "2"],
+            choices: ["(", "k²", "-", "1", ")", "/", "2", "k", "1", "+", "k² + 1"],
+            hint: "(sinθ + cosθ)² = sin²θ + 2sinθcosθ + cos²θ 공식을 이용해 보세요."
+        },
+        {
+            q: "sinθ - cosθ = k 일 때,<br>sinθcosθ 를 구하시오.",
+            correct: ["(", "1", "-", "k²", ")", "/", "2"],
+            choices: ["(", "1", "-", "k²", ")", "/", "2", "k", "k²", "+", "(k²-1)/2"],
+            hint: "(sinθ - cosθ)² = sin²θ - 2sinθcosθ + cos²θ 공식을 이용해 보세요."
+        },
+        {
+            q: "sinθ + cosθ = k 일 때,<br>tanθ + 1/tanθ 를 구하시오.",
+            correct: ["2", "/", "(", "k²", "-", "1", ")"],
+            choices: ["2", "/", "(", "k²", "-", "1", ")", "k²", "1", "-", "k", "k² + 1"],
+            hint: "tanθ + 1/tanθ = sinθ/cosθ + cosθ/sinθ = 1/(sinθcosθ) 임을 이용하세요."
+        },
+        {
+            q: "sinθ - cosθ = k 일 때,<br>tanθ + 1/tanθ 를 구하시오.",
+            correct: ["2", "/", "(", "1", "-", "k²", ")"],
+            choices: ["2", "/", "(", "1", "-", "k²", ")", "k²", "k", "1", "-", "2/(k²-1)"],
+            hint: "1/(sinθcosθ)를 구하는 문제와 같습니다. 앞서 구한 식의 역수를 취해 보세요."
+        },
+        {
+            q: "sec²θ - tan²θ = ?",
+            correct: ["1"],
+            choices: ["1", "0", "-1", "sec²θ", "tan²θ", "csc²θ", "cot²θ"],
+            hint: "1 + tan²θ = sec²θ 공식을 변형해 보세요."
+        },
+        {
+            q: "csc²θ - cot²θ = ?",
+            correct: ["1"],
+            choices: ["1", "0", "-1", "csc²θ", "cot²θ", "sec²θ", "tan²θ"],
+            hint: "1 + cot²θ = csc²θ 공식을 변형해 보세요."
+        }
+    ];
+
+    // 게임 상태 변수
+    let currentIndex = 0;
+    let score = 0;
+    let currentAnswer = []; // 사용자가 선택한 카드 목록
+    let totalQuestions = questionBank.length;
+
+    // 초기 실행
+    window.onload = () => {
+        document.getElementById('total-questions').innerText = totalQuestions;
+        loadQuestion();
+    };
+
+    // 2. 문제 로드 함수
+    function loadQuestion() {
+        const question = questionBank[currentIndex];
+        document.getElementById('question-text').innerHTML = question.q;
+        document.getElementById('current-index').innerText = currentIndex + 1;
+        document.getElementById('score').innerText = score;
+        document.getElementById('hint-box').innerText = "";
+        
+        // 답안 및 선택지 초기화
+        currentAnswer = [];
+        renderAnswerZone();
+        
+        // 선택지 카드 섞기
+        // 기본 제공 오답 카드를 포함하여 10~15개 정도가 되도록 보충
+        let cards = [...question.choices];
+        const extraPool = ["sinθ", "cosθ", "1", "2", "k²", "(", ")", "+", "-", "/", "tanθ", "secθ", "cscθ", "k", "sin²θ", "cos²θ"];
+        
+        while (cards.length < 12) {
+            let randomCard = extraPool[Math.floor(Math.random() * extraPool.length)];
+            if (!cards.includes(randomCard) || Math.random() > 0.5) {
+                cards.push(randomCard);
+            }
+        }
+        
+        // 최종 셔플
+        cards = shuffle(cards);
+        
+        const choicesZone = document.getElementById('choices-zone');
+        choicesZone.innerHTML = "";
+        cards.forEach((content, index) => {
+            const card = createCard(content, index);
+            choicesZone.appendChild(card);
+        });
+
+        // 버튼 상태 초기화
+        document.getElementById('submit-btn').style.display = "block";
+        document.getElementById('next-btn').style.display = "none";
+    }
+
+    // 3. 카드 생성 함수
+    function createCard(content, id, isAnswerZone = false) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerText = content;
+        card.draggable = true;
+        
+        // 클릭 이벤트: 조작 편의성
+        card.onclick = () => {
+            if (isAnswerZone) {
+                removeCard(id);
+            } else {
+                addCard(content);
+            }
+        };
+
+        // 드래그 이벤트
+        card.ondragstart = (e) => {
+            e.dataTransfer.setData("text", content);
+            e.dataTransfer.setData("fromAnswer", isAnswerZone);
+            e.dataTransfer.setData("index", id);
+        };
+
+        return card;
+    }
+
+    // 카드 추가
+    function addCard(content) {
+        currentAnswer.push(content);
+        renderAnswerZone();
+    }
+
+    // 카드 제거
+    function removeCard(index) {
+        currentAnswer.splice(index, 1);
+        renderAnswerZone();
+    }
+
+    // 답안 영역 렌더링
+    function renderAnswerZone() {
+        const zone = document.getElementById('answer-zone');
+        zone.innerHTML = "";
+        currentAnswer.forEach((content, index) => {
+            zone.appendChild(createCard(content, index, true));
+        });
+    }
+
+    // 4. 드래그 앤 드롭 핸들러
+    function allowDrop(e) {
+        e.preventDefault();
+        document.getElementById('answer-zone').classList.add('drag-over');
+    }
+
+    function drop(e) {
+        e.preventDefault();
+        document.getElementById('answer-zone').classList.remove('drag-over');
+        const content = e.dataTransfer.getData("text");
+        const fromAnswer = e.dataTransfer.getData("fromAnswer") === "true";
+        
+        if (!fromAnswer) {
+            addCard(content);
+        }
+    }
+
+    document.getElementById('answer-zone').ondragleave = () => {
+        document.getElementById('answer-zone').classList.remove('drag-over');
+    };
+
+    // 5. 채점 로직
+    function checkAnswer() {
+        const question = questionBank[currentIndex];
+        const correctAnswer = question.correct;
+        
+        // 배열 길이와 내용을 순서대로 비교
+        const isCorrect = currentAnswer.length === correctAnswer.length && 
+                          currentAnswer.every((val, index) => val === correctAnswer[index]);
+        
+        if (isCorrect) {
+            score += 10;
+            document.getElementById('score').innerText = score;
+            document.getElementById('hint-box').style.color = "var(--success-color)";
+            document.getElementById('hint-box').innerText = "정답입니다! 훌륭해요! ✨";
+            document.getElementById('submit-btn').style.display = "none";
+            document.getElementById('next-btn').style.display = "block";
+        } else {
+            document.getElementById('hint-box').style.color = "var(--error-color)";
+            document.getElementById('hint-box').innerText = "오답입니다. 힌트: " + question.hint;
+        }
+    }
+
+    // 6. 다음 문제 전환
+    function nextQuestion() {
+        currentIndex++;
+        if (currentIndex < totalQuestions) {
+            loadQuestion();
+        } else {
+            showFinalResult();
+        }
+    }
+
+    // 7. 최종 결과 표시
+    function showFinalResult() {
+        const resultScreen = document.getElementById('result-screen');
+        const finalStats = document.getElementById('final-stats');
+        
+        const accuracy = Math.round((score / (totalQuestions * 10)) * 100);
+        
+        finalStats.innerHTML = `
+            최종 점수: <strong>${score}점</strong><br>
+            정답 수: <strong>${score/10} / ${totalQuestions}</strong><br>
+            정답률: <strong>${accuracy}%</strong>
+        `;
+        
+        resultScreen.style.display = "flex";
+    }
+
+    // 유틸리티: 배열 셔플 (Fisher-Yates 알고리즘)
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+</script>
+
+</body>
+</html>
